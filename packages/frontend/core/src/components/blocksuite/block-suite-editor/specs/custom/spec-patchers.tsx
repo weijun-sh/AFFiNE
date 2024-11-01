@@ -7,6 +7,9 @@ import {
   toReactNode,
   type useConfirmModal,
 } from '@affine/component';
+import { AttachmentPreviewErrorBoundary } from '@affine/core/components/attachment-viewer/error';
+import { PDFViewer } from '@affine/core/components/attachment-viewer/pdf-viewer';
+import { buildAttachmentProps } from '@affine/core/components/attachment-viewer/utils';
 import type { EditorService } from '@affine/core/modules/editor';
 import { EditorSettingService } from '@affine/core/modules/editor-setting';
 import { resolveLinkToDoc } from '@affine/core/modules/navigation';
@@ -48,6 +51,7 @@ import {
   AFFINE_EMBED_CARD_TOOLBAR_WIDGET,
   AFFINE_FORMAT_BAR_WIDGET,
   AffineSlashMenuWidget,
+  AttachmentEmbedConfigIdentifier,
   DocModeExtension,
   EdgelessRootBlockComponent,
   EmbedLinkedDocBlockComponent,
@@ -619,4 +623,25 @@ export function patchForMobile() {
     },
   };
   return extension;
+}
+
+export function patchForAttachmentEmbedViews(
+  reactToLit: (element: ElementOrFactory) => TemplateResult
+): ExtensionType {
+  return {
+    setup: di => {
+      di.override(AttachmentEmbedConfigIdentifier('pdf'), () => ({
+        name: 'pdf',
+        check: (model, maxFileSize) =>
+          model.type === 'application/pdf' && model.size <= maxFileSize,
+        template: (model, _blobUrl) =>
+          // TODO(@fundon): fixme, unable to release pdf worker when switching view
+          reactToLit(
+            <AttachmentPreviewErrorBoundary key={model.id}>
+              <PDFViewer {...buildAttachmentProps(model)} embedded />
+            </AttachmentPreviewErrorBoundary>
+          ),
+      }));
+    },
+  };
 }
