@@ -33,6 +33,12 @@ import { calculatePageNum } from './utils';
 
 const THUMBNAIL_WIDTH = 94;
 
+enum DisplayMode {
+  FitToPage,
+  FitToWidth,
+  ActualSize,
+}
+
 interface ViewerProps {
   model: AttachmentBlockModel;
 }
@@ -44,6 +50,8 @@ interface PDFViewerInnerProps {
 
 const PDFViewerInner = ({ pdf, state }: PDFViewerInnerProps) => {
   const [cursor, setCursor] = useState(0);
+  const [zoom, setZoom] = useState(1);
+  const [mode, _setMode] = useState(DisplayMode.FitToPage);
   const [collapsed, setCollapsed] = useState(true);
   const [viewportInfo, setViewportInfo] = useState({ width: 0, height: 0 });
 
@@ -69,11 +77,7 @@ const PDFViewerInner = ({ pdf, state }: PDFViewerInnerProps) => {
       const scroller = pagesScrollerHandleRef.current;
       if (!scroller) return;
 
-      scroller.scrollToIndex({
-        index,
-        align: 'center',
-        behavior: 'smooth',
-      });
+      scroller.scrollToIndex({ index, align: 'center', behavior: 'smooth' });
     },
     [pagesScrollerHandleRef]
   );
@@ -99,13 +103,23 @@ const PDFViewerInner = ({ pdf, state }: PDFViewerInnerProps) => {
     [pdf]
   );
 
+  const pagesContext = useMemo(() => {
+    const { width: w, height: h } = state.meta;
+
+    return {
+      width: zoom * w,
+      height: zoom * h,
+      pageClassName: styles.pdfPage,
+    };
+  }, [state, zoom]);
+
   const thumbnailsConfig = useMemo(() => {
     const { height: vh } = viewportInfo;
-    const { pageCount: t, height: h, width: w } = state.meta;
+    const { width: w, height: h, pageCount: c } = state.meta;
     const p = h / (w || 1);
     const pw = THUMBNAIL_WIDTH;
     const ph = Math.ceil(pw * p);
-    const height = Math.min(vh - 60 - 24 - 24 - 2 - 8, t * ph + (t - 1) * 12);
+    const height = Math.min(vh - 60 - 24 - 24 - 2 - 8, c * ph + (c - 1) * 12);
     return {
       context: {
         width: pw,
@@ -123,6 +137,18 @@ const PDFViewerInner = ({ pdf, state }: PDFViewerInnerProps) => {
       exit: velocity => Math.abs(velocity) < 10,
     };
   }, []);
+
+  useEffect(() => {
+    let { width: vw, height: vh } = viewportInfo;
+    const { width: w, height: h } = state.meta;
+
+    vh -= 40;
+    vw -= 40;
+
+    if (mode === DisplayMode.FitToPage) {
+      setZoom(Math.min(vh / h, vw / w));
+    }
+  }, [viewportInfo, mode, state]);
 
   useEffect(() => {
     const viewer = viewerRef.current;
@@ -156,11 +182,7 @@ const PDFViewerInner = ({ pdf, state }: PDFViewerInnerProps) => {
           Footer: ListPadding,
           ScrollSeekPlaceholder,
         }}
-        context={{
-          width: state.meta.width,
-          height: state.meta.height,
-          pageClassName: styles.pdfPage,
-        }}
+        context={pagesContext}
         scrollSeekConfiguration={scrollSeekConfig}
       />
       <div className={clsx(['thumbnails', styles.pdfThumbnails])}>

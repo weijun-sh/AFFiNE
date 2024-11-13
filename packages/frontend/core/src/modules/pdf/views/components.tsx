@@ -32,16 +32,24 @@ export const ScrollSeekPlaceholder = forwardRef<
   ScrollSeekPlaceholderProps & {
     context?: PDFVirtuosoContext;
   }
->(({ context }, ref) => {
+>(({ context, index, height: size }, ref) => {
   const className = context?.pageClassName;
   const width = context?.width ?? 537;
   const height = context?.height ?? 759;
   const style = { width, aspectRatio: `${width} / ${height}` };
 
   return (
-    <div className={className} style={style} ref={ref}>
-      <LoadingSvg />
-    </div>
+    <Item
+      data-index={index}
+      data-known-size={size}
+      data-item-index={index}
+      style={{ overflowAnchor: 'none' }}
+      ref={ref}
+    >
+      <div className={className} style={style}>
+        <LoadingSvg />
+      </div>
+    </Item>
   );
 });
 

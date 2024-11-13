@@ -1,6 +1,6 @@
 import { useI18n } from '@affine/i18n';
 import { useLiveData } from '@toeverything/infra';
-import { useEffect, useRef, useState } from 'react';
+import { forwardRef, useEffect, useRef, useState } from 'react';
 
 import type { PDF } from '../entities/pdf';
 import type { PDFPage } from '../entities/pdf-page';
@@ -58,27 +58,38 @@ export const PDFPageRenderer = ({
     ctx.drawImage(img, 0, 0);
   }, [img, width, height, scale]);
 
-  if (error) {
-    return (
-      <div className={className} style={style}>
-        <p className={styles.pdfPageError}>
-          {t['com.affine.pdf.page.render.error']()}
-        </p>
-      </div>
-    );
-  }
-
   return (
     <div
       className={className}
       style={style}
       onClick={() => onSelect?.(pageNum)}
     >
-      {img === null ? (
-        <LoadingSvg />
-      ) : (
-        <canvas className={styles.pdfPageCanvas} ref={canvasRef} />
-      )}
+      <PageRendererInner
+        img={img}
+        ref={canvasRef}
+        err={error ? t['com.affine.pdf.page.render.error']() : null}
+      />
     </div>
   );
 };
+
+interface PageRendererInnerProps {
+  img: ImageBitmap | null;
+  err: string | null;
+}
+
+const PageRendererInner = forwardRef<HTMLCanvasElement, PageRendererInnerProps>(
+  ({ img, err }, ref) => {
+    if (img) {
+      return <canvas className={styles.pdfPageCanvas} ref={ref} />;
+    }
+
+    if (err) {
+      return <p className={styles.pdfPageError}>{err}</p>;
+    }
+
+    return <LoadingSvg />;
+  }
+);
+
+PageRendererInner.displayName = 'pdf-page-renderer-inner';
