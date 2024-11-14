@@ -110,7 +110,8 @@ function DocPeekPreviewEditor({
 
       const unbind = editor.bindEditorContainer(
         editorContainer,
-        (editorContainer as any).title
+        // TODO(@forehalo): we need type
+        (editorContainer as any).docTitle
       );
 
       if (mode === 'edgeless') {
