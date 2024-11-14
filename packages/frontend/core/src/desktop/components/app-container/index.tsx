@@ -1,5 +1,6 @@
 import { useAppSettingHelper } from '@affine/core/components/hooks/affine/use-app-setting-helper';
 import { RootAppSidebar } from '@affine/core/components/root-app-sidebar';
+import { AppFallback } from '@affine/core/mobile/components';
 import { AppSidebarService } from '@affine/core/modules/app-sidebar';
 import {
   AppSidebarFallback,
@@ -102,7 +103,23 @@ const BrowserLayout = ({
   );
 };
 
-const LayoutComponent = BUILD_CONFIG.isElectron ? DesktopLayout : BrowserLayout;
+const MobileLayout = ({
+  children,
+  fallback = false,
+}: PropsWithChildren<{ fallback?: boolean }>) => {
+  return (
+    <div className={styles.browserAppViewContainer}>
+      {fallback ? <AppFallback /> : null}
+      <MainContainer>{children}</MainContainer>
+    </div>
+  );
+};
+
+const LayoutComponent = BUILD_CONFIG.isElectron
+  ? DesktopLayout
+  : BUILD_CONFIG.isMobileEdition
+    ? MobileLayout
+    : BrowserLayout;
 
 const MainContainer = forwardRef<
   HTMLDivElement,
